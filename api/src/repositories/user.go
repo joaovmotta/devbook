@@ -32,7 +32,7 @@ func (userRepository User) Create(user models.User) (uint64, error) {
 
 	if err != nil {
 
-		return 0, nil
+		return 0, err
 	}
 
 	lastID, err := response.LastInsertId()
@@ -43,6 +43,27 @@ func (userRepository User) Create(user models.User) (uint64, error) {
 	}
 
 	return uint64(lastID), nil
+}
+
+func (userRepository User) Update(userId uint64, user models.User) error {
+
+	statement, err := userRepository.db.Prepare(
+		"UPDATE user SET name = ?, nickname = ?, email = ? where id = ?",
+	)
+
+	if err != nil {
+
+		return err
+	}
+
+	defer statement.Close()
+
+	if _, err := statement.Exec(user.Name, user.Nickname, user.Email, userId); err != nil {
+
+		return err
+	}
+
+	return nil
 }
 
 func (userRepository User) FindUser(nameOrNick string) ([]models.User, error) {
@@ -85,39 +106,66 @@ func (userRepository User) FindUser(nameOrNick string) ([]models.User, error) {
 	return users, nil
 }
 
-func (userRepository User) FindUserById(ID uint64) ([]models.User, error) {
+func (userRepository User) FindUserById(ID uint64) (models.User, error) {
 
-	rows, err := userRepository.db.Query(
+	var user models.User
+
+	err := userRepository.db.QueryRow(
 		"SELECT id, name, nickname, email, createdAt FROM user WHERE id = ?",
 		ID,
+	).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Nickname,
+		&user.Email,
+		&user.CreatedAt,
 	)
 
 	if err != nil {
 
-		return nil, err
+		return models.User{}, err
 	}
 
-	defer rows.Close()
+	return user, nil
+}
 
-	var users []models.User
+func (userRepository User) FindUserByEmail(email string) (models.User, error) {
 
-	for rows.Next() {
+	var user models.User
 
-		var user models.User
+	err := userRepository.db.QueryRow(
+		"SELECT id, password FROM user WHERE email = ?",
+		email,
+	).Scan(
+		&user.ID,
+		&user.Password,
+	)
 
-		if err = rows.Scan(
-			&user.ID,
-			&user.Name,
-			&user.Nickname,
-			&user.Email,
-			&user.CreatedAt,
-		); err != nil {
+	if err != nil {
 
-			return nil, err
-		}
-
-		users = append(users, user)
+		return models.User{}, err
 	}
 
-	return users, nil
+	return user, nil
+}
+
+func (userRepository User) Delete(ID uint64) error {
+
+	statement, err := userRepository.db.Prepare(
+		"DELETE FROM user WHERE ID = ?",
+	)
+
+	if err != nil {
+
+		return err
+	}
+
+	defer statement.Close()
+
+	if _, err := statement.Exec(ID); err != nil {
+
+		return err
+	}
+
+	return nil
 }
