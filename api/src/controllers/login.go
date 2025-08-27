@@ -1,13 +1,13 @@
 package controllers
 
 import (
+	"devbook-api/src/authorization"
 	"devbook-api/src/database"
 	"devbook-api/src/models"
 	"devbook-api/src/repositories"
 	"devbook-api/src/responses"
 	"devbook-api/src/security"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -55,5 +55,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Logged in")
+	token, err := authorization.CreateToken(userDB.ID)
+
+	if err != nil {
+
+		responses.Error(w, http.StatusInternalServerError, err)
+	}
+
+	w.Write([]byte(token))
 }

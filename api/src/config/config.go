@@ -12,6 +12,7 @@ import (
 var (
 	ConnectionString = ""
 	Port             = 0
+	SecretKey        []byte
 )
 
 func ConfigureEnvironment() {
@@ -29,6 +30,8 @@ func ConfigureEnvironment() {
 
 		Port = 9000
 	}
+
+	SecretKey = []byte(os.Getenv("SECRET_KEY"))
 
 	ConnectionString = fmt.Sprintf("%s:%s@/%s?charset=utf8&parseTime=True&loc=Local",
 		os.Getenv("DB_USER"),
