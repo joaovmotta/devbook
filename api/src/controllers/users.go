@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"devbook-api/src/authorization"
 	"devbook-api/src/database"
 	"devbook-api/src/models"
 	"devbook-api/src/repositories"
 	"devbook-api/src/responses"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -125,11 +127,25 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	parameters := mux.Vars(r)
 
-	userId, err := strconv.ParseInt(parameters["userId"], 10, 64)
+	userId, err := strconv.ParseUint(parameters["userId"], 10, 64)
 
 	if err != nil {
 
 		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	userIdFromToken, err := authorization.GetUserId(r)
+
+	if err != nil {
+
+		responses.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userId != userIdFromToken {
+
+		responses.Error(w, http.StatusForbidden, errors.New("not authorized to do it"))
 		return
 	}
 
@@ -175,11 +191,25 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	parameters := mux.Vars(r)
 
-	userId, err := strconv.ParseInt(parameters["userId"], 10, 64)
+	userId, err := strconv.ParseUint(parameters["userId"], 10, 64)
 
 	if err != nil {
 
 		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	userIdFromToken, err := authorization.GetUserId(r)
+
+	if err != nil {
+
+		responses.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userId != userIdFromToken {
+
+		responses.Error(w, http.StatusForbidden, errors.New("not authorized to do it"))
 		return
 	}
 
